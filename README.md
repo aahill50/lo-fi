@@ -1,28 +1,72 @@
-# Create T3 App
+![Lo-Fi](https://i.imgur.com/boTI4vS.gif)
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
+lo-fi aims to reduce initial page load time by providing a low-poly representation of an image.
+That image is then obscured using a gaussian blur and converted into an svg, which can be served back to the end-user as text.
 
-## What's next? How do I make an app with this?
+In other words... lo-fi >> loads fast!
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
+lo-fi is a node server that accepts
 
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
+This version of lo-fi is written using the t3 stack:
+Typescript
+Next.js
+Tailwind CSS
+tRPC
 
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org)
-- [Prisma](https://prisma.io)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
+## Install Go
+First, you'll need to [install Go](https://golang.org/doc/install)
 
-## Learn More
+Once `go` has been installed, add it to your PATH env var
 
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
+Open your bash_profile and add the following lines at the end:
+```bash
+# add go to PATH
+export PATH=$PATH:/usr/local/go/bin
+```
+Save and exit your bash_profile
 
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
+ Now [source](https://superuser.com/questions/46139/what-does-source-do/46146#46146) your bash profile and run `which go`. If everything was set up correctly, you should see the path to your `go` executable
 
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
 
-## How do I deploy this?
+## Install Primitive
+Next, you'll need to install [primitive](github.com/fogleman/primitive):
 
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+Run `go get -u github.com/fogleman/primitive`, which should download and install `primitive`
+
+By default `go` will install user downloaded packages to `$HOME/go/bin/`, so similar to above, add this line to the bottom of your bash_profile:
+```
+# add downloaded go packages to PATH
+export PATH=$PATH:$HOME/go/bin
+```
+
+Once again, [source](https://superuser.com/questions/46139/what-does-source-do/46146#46146) your bash profile, then run `which primitive`. If everything was set up correctly, you should now see the path to your `primitive` executable
+
+## Local Usage
+`npm install`
+
+`npm dev`
+
+Now your lo-fi server is running! Head to http://localhost:3000/placeholder to see what it can do!
+
+Now you can generate svgs or gifs by hitting the endpoint (`http://localhost:7041/placeholder` by default) with a `POST` request whose body contains the desired fields. This can be as simple as just using the required fields:
+
+```
+{
+  "webpath" : "URL_TO_IMAGE",
+  "fileType" : "svg"
+}
+```
+
+Additional fields can be passed to modify the result:
+
+### Body properties
+
+| Field              | Type   | Required | Default | Description                                                                                                                                      |
+| ------------------ | ------ | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| fileType           | string | true     | svg     | The type of file to output. Currently supports `gif` and `svg`                                                                                   |
+| webpath            | string | true     |         | The url of the image to be downloaded                                                                                                            |
+| numberOfPrimitives | number | false    | 8       | The number of shapes that will compose the final image                                                                                           |
+| primitiveMode      | number | false    | 0       | Determines the type of shapes that will be used. Defaults to 0 (all shapes). Corresponds to the `m` flag from [primitive](https://goo.gl/U19fy5) |
+| blurLevel          | number | false    | 12      | Determines the level of gaussian blur that will be applied. Only applicable to fileType: `svg`                                                   |
+| bgColor            | hex    | false    | ffffff  | Determines the background color of the svg                                                                                                       |
+| workers            | number | false    | 2       | Determines the number of parallel workers primitive will use                                                                                     |
