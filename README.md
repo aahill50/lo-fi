@@ -11,6 +11,7 @@ This version of lo-fi is written using the t3 stack:
 Typescript
 Next.js
 Tailwind CSS
+Chakra UI
 tRPC
 
 ## Install Go
@@ -27,9 +28,15 @@ Save and exit your bash_profile
 
  Now [source](https://superuser.com/questions/46139/what-does-source-do/46146#46146) your bash profile and run `which go`. If everything was set up correctly, you should see the path to your `go` executable
 
+## Install ImageMagick
+Next, you'll need to install [ImageMagick](https://imagemagick.org/script/download.php)
+
+This is needed if you want to output .gif files as it uses ImageMagick's `convert` command
+
+Once it has been installed, make sure the `convert` executable is added to PATH
 
 ## Install Primitive
-Next, you'll need to install [primitive](github.com/fogleman/primitive):
+Finally, you'll need to install [primitive](github.com/fogleman/primitive):
 
 Run `go get -u github.com/fogleman/primitive`, which should download and install `primitive`
 
