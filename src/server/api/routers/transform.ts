@@ -35,7 +35,7 @@ export const transformRouter = createTRPCRouter({
           blurLevel: OPTION_DEFAULT_BLUR,
         });
       } catch (err) {
-        error = err.toString();
+        error = err?.toString();
         return { error };
       }
 
