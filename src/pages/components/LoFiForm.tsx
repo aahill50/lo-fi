@@ -1,4 +1,4 @@
-import React, { ChangeEvent, FormEvent, useCallback, useState } from "react";
+import React, { FormEvent, useCallback, useEffect, useState } from "react";
 import {
   Container,
   FormControl,
@@ -11,60 +11,97 @@ import {
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
-  Select,
-  InputGroup,
+  Button,
+  Grid,
+  GridItem,
+  Spinner,
+  Card,
+  CardBody,
   Text,
+  Image,
+  Slider,
+  SliderTrack,
+  SliderFilledTrack,
+  SliderThumb,
+  CardHeader,
+  Heading,
   Stack,
-  Skeleton,
-  Box,
 } from "@chakra-ui/react";
+import { api } from "~/utils/api";
+import { CopyIcon, DownloadIcon, CheckIcon } from "@chakra-ui/icons";
 
-/**
- * mode: 0=combo
- * 1=triangle
- * 2=rect
- * 3=ellipse
- * 4=circle
- * 5=rotatedrect
- * 6=beziers
- * 7=rotatedellipse
- * 8=polygon
- */
-
-enum ShapeType {
-  "All Shapes",
-  "Triangles",
-  "Rectangles",
-  "Ellipses",
-  "Circles",
-  "Rotated Rectangles",
-  "Bezier Curves",
-  "Rotated Ellipses",
-  "Polygons",
+interface ImageDisplayProps {
+  alt: string;
+  header: string;
+  imgSrc: string;
+  fileSize: string;
+  fileType: string;
 }
 
-const shapeTypes: (keyof typeof ShapeType)[] = [
-  "All Shapes",
-  "Triangles",
-  "Rectangles",
-  "Ellipses",
-  "Circles",
-  "Rotated Rectangles",
-  "Bezier Curves",
-  "Rotated Ellipses",
-  "Polygons",
-];
+const ImageDisplay = (props: ImageDisplayProps) => {
+  const { alt, header, imgSrc, fileSize, fileType } = props;
 
-const isValidHexCode = (text: string): boolean => {
-  return !!text.match(/^#?(?:[0-9a-fA-F]{3}){1,2}$/gi);
+  return (
+    <Card>
+      <CardHeader>
+        <Heading size="md">{header}</Heading>
+      </CardHeader>
+      <CardBody>
+        {fileType === "svg" ? (
+          <div dangerouslySetInnerHTML={{ __html: imgSrc }} />
+        ) : (
+          <Image objectFit="cover" src={imgSrc} alt={alt} p={0} />
+        )}
+        <Text>{fileSize}</Text>
+      </CardBody>
+    </Card>
+  );
+};
+
+const DEFAULT = {
+  webpath: "",
+  numShapes: 128,
+  blurLevel: 4,
+  origSrc: null,
+  origSize: null,
+  svgSrc: null,
+  svgSize: null,
+  error: null,
+  isTransforming: false,
+  svgBtn: {
+    text: "Copy SVG as text",
+    copied: false,
+  },
+  downloadBtn: {
+    text: "Download SVG",
+    downloaded: false,
+  },
 };
 
 export default () => {
-  const [webpath, setWebpath] = useState("");
-  const [numShapes, setNumShapes] = useState(8);
-  const [shapeType, setShapeType] = useState(0);
-  const [blurLevel, setBlurLevel] = useState(0);
-  const [bgColor, setBgColor] = useState("FFFFFF");
+  const [webpath, setWebpath] = useState(DEFAULT.webpath);
+  const [numShapes, setNumShapes] = useState(DEFAULT.numShapes);
+  const [blurLevel, setBlurLevel] = useState(DEFAULT.blurLevel);
+  const [origSrc, setOrigSrc] = useState<string | null>(DEFAULT.origSrc);
+  const [origSize, setOrigSize] = useState<string | null>(DEFAULT.origSize);
+  const [svgSrc, setSvgSrc] = useState<string | null>(DEFAULT.svgSrc);
+  const [svgSize, setSvgSize] = useState<string | null>(DEFAULT.svgSize);
+  const [error, setError] = useState<string | null>(DEFAULT.error);
+  const [isTransforming, setIsTransforming] = useState(DEFAULT.isTransforming);
+  const [svgBtn, setSvgBtn] = useState(DEFAULT.svgBtn);
+  const [downloadBtn, setDownloadBtn] = useState(DEFAULT.downloadBtn);
+
+  const transformImage = api.transform.transformImage.useMutation({
+    onSuccess: (data) => {
+      setIsTransforming(false);
+      setSvgSrc(data?.svg || null);
+      setOrigSize(data?.origingalBytes || null);
+      setSvgSize(data?.svgBytes || null);
+      setError(data?.error || null);
+      setSvgBtn(DEFAULT.svgBtn);
+      setDownloadBtn(DEFAULT.downloadBtn);
+    },
+  });
 
   const onChangeWebpath = useCallback(
     (e: FormEvent<HTMLInputElement>) => {
@@ -80,29 +117,49 @@ export default () => {
     [setNumShapes],
   );
 
-  const onChangeShapeType = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => {
-      setShapeType(Number(e.currentTarget.value));
-    },
-    [setShapeType],
-  );
-
   const onChangeBlurLevel = useCallback(
-    (_: string, newBlurLevel: number) => {
-      setBlurLevel(newBlurLevel);
+    (value: number) => {
+      setBlurLevel(value);
     },
     [setBlurLevel],
   );
 
-  const onChangeBgColor = useCallback(
-    (e: FormEvent<HTMLInputElement>) => {
-      setBgColor(e.currentTarget.value);
-    },
-    [setBgColor],
-  );
+  const onTransformImage = useCallback(() => {
+    setIsTransforming(true);
+    setBlurLevel(DEFAULT.blurLevel);
+    setOrigSrc(webpath);
+    setSvgSrc(DEFAULT.svgSrc);
 
-  const hasBgColor = !!bgColor.length;
-  const isBgColorValid = isValidHexCode(bgColor);
+    transformImage.mutate({
+      url: webpath,
+      numberOfShapes: numShapes,
+    });
+  }, [webpath, numShapes]);
+
+  const onDownloadSvg = useCallback(() => {
+    if (!!svgSrc) {
+      const svgBlob = new Blob([svgSrc], {
+        type: "image/svg+xml;charset=utf-8",
+      });
+      const svgUrl = URL.createObjectURL(svgBlob);
+      const downloadLink = document.createElement("a");
+      downloadLink.href = svgUrl;
+      downloadLink.download = "output.svg";
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      setDownloadBtn({ text: "Downloaded", downloaded: true });
+    }
+  }, [svgSrc]);
+
+  useEffect(() => {
+    const updatedSvgSrc =
+      svgSrc?.replace(
+        /<feGaussianBlur stdDeviation=.* \/>/,
+        `<feGaussianBlur stdDeviation="${blurLevel}" />`,
+      ) || "";
+    setSvgSrc(updatedSvgSrc);
+  }, [blurLevel]);
 
   return (
     <Container maxW="full" p={8} bg={"white"} shadow={"lg"} rounded={"base"}>
@@ -126,88 +183,94 @@ export default () => {
             </NumberInputStepper>
           </NumberInput>
           <FormHelperText>
-            The number of shapes that will compose the final image
+            The number of shapes that will compose the final image. More shapes
+            will give the svg more detail at the cost of a bigger filesize.
           </FormHelperText>
         </FormControl>
-        <FormControl>
-          <FormLabel>Shape Type</FormLabel>
-          <Select
-            placeholder="Select option"
-            onChange={onChangeShapeType}
-            value={shapeType}
-          >
-            {shapeTypes.map((shapeType, index) => (
-              <option value={index}>{shapeType}</option>
-            ))}
-          </Select>
-          <FormHelperText>
-            Determines the type of shapes that will be used to generate the
-            final image
-          </FormHelperText>
-        </FormControl>
-        <FormControl>
-          <FormLabel>Blur (applies to svg only)</FormLabel>
-          <NumberInput value={blurLevel} onChange={onChangeBlurLevel}>
-            <NumberInputField />
-            <NumberInputStepper>
-              <NumberIncrementStepper />
-              <NumberDecrementStepper />
-            </NumberInputStepper>
-          </NumberInput>
-          <FormHelperText>
-            Determines the level of blur added to the resullting image (applies
-            only to the svg). Corresponds to the{" "}
-            <a
-              href="https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stdDeviation"
-              target="_blank"
+        {!svgSrc ? null : (
+          <FormControl>
+            <FormLabel>Blur</FormLabel>
+            <Slider
+              aria-label="slider-ex-1"
+              defaultValue={8}
+              max={16}
+              min={0}
+              value={blurLevel}
+              onChange={onChangeBlurLevel}
+              colorScheme="teal"
             >
-              stdDeviation attribute
-            </a>
-          </FormHelperText>
-        </FormControl>
-        <FormControl>
-          <FormLabel>Background Color Hex Code (applies to svg only)</FormLabel>
-          <InputGroup>
-            <Stack w="full" spacing="4">
-              <Input
-                type="text"
-                onChange={onChangeBgColor}
-                placeholder="FFFFFF"
-                value={bgColor}
-                isInvalid={!isBgColorValid}
-              />
-              <Box
-                bgColor={isBgColorValid ? `#${bgColor}` : "white"}
-                height="40px"
-                mt={-2}
-                border={"1px"}
-                borderColor={hasBgColor && isBgColorValid ? "black" : "transparent"}
-                rounded={"base"}
-                textStyle={"input"}
-              >
-                {isBgColorValid || !hasBgColor ? null : (
-                  <Text color="red" px={4}>
-                    #{bgColor} is not a valid hex code
-                  </Text>
-                )}
-              </Box>
-            </Stack>
-          </InputGroup>
-        </FormControl>
-      </VStack>
-      <pre>
-        {JSON.stringify(
-          {
-            webpath,
-            numShapes,
-            shapeType,
-            blurLevel,
-            bgColor,
-          },
-          null,
-          2,
+              <SliderTrack>
+                <SliderFilledTrack />
+              </SliderTrack>
+              <SliderThumb />
+            </Slider>
+            {blurLevel}
+            <FormHelperText>
+              Blur level is set to 4 by default, but you can change it here by
+              adjusting the slider. Set blur to 0 to see the image without a
+              blur filter at all
+            </FormHelperText>
+          </FormControl>
         )}
-      </pre>
+        <Button
+          disabled={!webpath.length}
+          alignSelf={"start"}
+          colorScheme="teal"
+          size={"lg"}
+          onClick={onTransformImage}
+        >
+          Transform Image
+        </Button>
+        {isTransforming ? (
+          <Spinner />
+        ) : !!error ? (
+          <Text color="red">{error}</Text>
+        ) : !origSrc ? null : (
+          <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+            <GridItem>
+              <ImageDisplay
+                alt="original image"
+                fileSize={origSize || ""}
+                fileType="*"
+                header="Original"
+                imgSrc={origSrc}
+              />
+            </GridItem>
+            <GridItem>
+              <ImageDisplay
+                alt="transformed svg"
+                fileSize={svgSize || ""}
+                fileType={"svg"}
+                header="SVG"
+                imgSrc={svgSrc || ""}
+              />
+              <Stack spacing={4} direction="row" align="start" mt="4">
+                <Button
+                  leftIcon={
+                    downloadBtn.downloaded ? <CheckIcon /> : <DownloadIcon />
+                  }
+                  colorScheme="teal"
+                  onClick={onDownloadSvg}
+                >
+                  {downloadBtn.text}
+                </Button>
+                <Button
+                  leftIcon={svgBtn.copied ? <CheckIcon /> : <CopyIcon />}
+                  colorScheme="teal"
+                  variant={"outline"}
+                  onClick={() => {
+                    navigator.clipboard.writeText(svgSrc || "").then(() => {
+                      setSvgBtn({ text: "Copied", copied: true });
+                    });
+                  }}
+                >
+                  {svgBtn.text}
+                </Button>
+              </Stack>
+            </GridItem>
+          </Grid>
+        )}
+      </VStack>
     </Container>
   );
 };
