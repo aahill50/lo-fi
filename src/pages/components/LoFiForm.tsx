@@ -1,4 +1,4 @@
-import React, { FormEvent, useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Container,
   FormControl,
@@ -78,7 +78,7 @@ const DEFAULT = {
   },
 };
 
-export default () => {
+const LofiForm = () => {
   const [webpath, setWebpath] = useState(DEFAULT.webpath);
   const [numShapes, setNumShapes] = useState(DEFAULT.numShapes);
   const [blurLevel, setBlurLevel] = useState(DEFAULT.blurLevel);
@@ -94,17 +94,17 @@ export default () => {
   const transformImage = api.transform.transformImage.useMutation({
     onSuccess: (data) => {
       setIsTransforming(false);
-      setSvgSrc(data?.svg || null);
-      setOrigSize(data?.origingalBytes || null);
-      setSvgSize(data?.svgBytes || null);
-      setError(data?.error || null);
+      setSvgSrc(data?.svg ?? null);
+      setOrigSize(data?.origingalBytes ?? null);
+      setSvgSize(data?.svgBytes ?? null);
+      setError(data?.error ?? null);
       setSvgBtn(DEFAULT.svgBtn);
       setDownloadBtn(DEFAULT.downloadBtn);
     },
   });
 
   const onChangeWebpath = useCallback(
-    (e: FormEvent<HTMLInputElement>) => {
+    (e: React.FormEvent<HTMLInputElement>) => {
       setWebpath(e.currentTarget.value);
     },
     [setWebpath],
@@ -134,7 +134,7 @@ export default () => {
       url: webpath,
       numberOfShapes: numShapes,
     });
-  }, [webpath, numShapes]);
+  }, [webpath, numShapes, transformImage]);
 
   const onDownloadSvg = useCallback(() => {
     if (!!svgSrc) {
@@ -157,9 +157,9 @@ export default () => {
       svgSrc?.replace(
         /<feGaussianBlur stdDeviation=.* \/>/,
         `<feGaussianBlur stdDeviation="${blurLevel}" />`,
-      ) || "";
+      ) ?? "";
     setSvgSrc(updatedSvgSrc);
-  }, [blurLevel]);
+  }, [blurLevel, svgSrc]);
 
   return (
     <Container maxW="full" p={8} bg={"white"} shadow={"lg"} rounded={"base"}>
@@ -230,7 +230,7 @@ export default () => {
             <GridItem>
               <ImageDisplay
                 alt="original image"
-                fileSize={origSize || ""}
+                fileSize={origSize ?? ""}
                 fileType="*"
                 header="Original"
                 imgSrc={origSrc}
@@ -239,10 +239,10 @@ export default () => {
             <GridItem>
               <ImageDisplay
                 alt="transformed svg"
-                fileSize={svgSize || ""}
+                fileSize={svgSize ?? ""}
                 fileType={"svg"}
                 header="SVG"
-                imgSrc={svgSrc || ""}
+                imgSrc={svgSrc ?? ""}
               />
               <Stack spacing={4} direction="row" align="start" mt="4">
                 <Button
@@ -259,9 +259,11 @@ export default () => {
                   colorScheme="teal"
                   variant={"outline"}
                   onClick={() => {
-                    navigator.clipboard.writeText(svgSrc || "").then(() => {
-                      setSvgBtn({ text: "Copied", copied: true });
-                    });
+                    void navigator.clipboard
+                      .writeText(svgSrc ?? "")
+                      .then(() => {
+                        setSvgBtn({ text: "Copied", copied: true });
+                      })
                   }}
                 >
                   {svgBtn.text}
@@ -274,3 +276,5 @@ export default () => {
     </Container>
   );
 };
+
+export default LofiForm;

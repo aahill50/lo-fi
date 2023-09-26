@@ -9,9 +9,7 @@ const MAX_RETRIES = 8;
 
 const logger = pino();
 
-export const createTmpFolder = async (
-  retryCount: number = 0,
-): Promise<string> => {
+export const createTmpFolder = async (retryCount = 0): Promise<string> => {
   let folder = path.resolve("./tmp/lo-fi/", `${uuidv4()}`);
   const child = logger.child({ folder });
   child.info("Attempting to create temp folder");
@@ -46,8 +44,8 @@ export const removeTmpFolder = (tmpFolder: string) => {
 export const getDimensions = (filename: string) => {
   const res = sizeOf(filename);
   return {
-    height: res.height || 0,
-    width: res.width || 0,
+    height: res.height ?? 0,
+    width: res.width ?? 0,
   };
 };
 

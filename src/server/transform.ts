@@ -112,7 +112,8 @@ export const transformImage = async (
   const { pathname } = new URL(url);
   const parts = pathname.split("/");
   let fileName = parts.pop();
-  let errorMessage;
+  let errorMessage: string | undefined;
+  let errorPieceCount = 0;
   let identifyIo;
 
   // Ignore trailing slash
@@ -120,19 +121,34 @@ export const transformImage = async (
     fileName = parts.pop();
   }
 
-  return new Promise(async (resolve, reject) => {
-    try {
-      const [res, tmpFolder] = await Promise.all([
-        fetch(url),
-        createTmpFolder(),
-      ]);
+  const [res, tmpFolder] = await Promise.all([fetch(url), createTmpFolder()]);
 
+  return new Promise((resolve, reject) => {
+    try {
       if (res.ok) {
         child.info("Fetched image");
       } else {
         if (!!res.json) {
-          const { error } = await res.json();
-          errorMessage = `${error.message} - ${error.localizedMessage}`;
+          res
+            .json()
+            .then(
+              (json: {
+                error?: { message?: string; localizedMessage?: string };
+              }) => {
+                if (json?.error?.message) {
+                  errorMessage += json.error?.message;
+                  errorPieceCount++;
+                }
+
+                if (json?.error?.localizedMessage) {
+                  errorMessage += `${errorPieceCount > 0 ? ` - ` : ""}${json
+                    .error?.localizedMessage}`;
+                }
+              },
+            )
+            .catch(() => {
+              errorMessage = "Failed to fetch image";
+            });
         } else {
           errorMessage = "Failed to fetch image";
         }
@@ -153,7 +169,7 @@ export const transformImage = async (
       const tmpFile = createWriteStream(origPath);
 
       if (res?.body) {
-        res.body.pipeTo(WriteStream.toWeb(tmpFile));
+        void res.body.pipeTo(WriteStream.toWeb(tmpFile));
       } else {
         errorMessage = "Unable to parse body from fetch response";
         child.error(errorMessage);
@@ -166,7 +182,7 @@ export const transformImage = async (
         return reject(errorMessage);
       });
 
-      tmpFile.on("close", async () => {
+      tmpFile.on("close", () => {
         const identifyCliArgs = ["identify", origPath];
 
         try {
@@ -192,24 +208,27 @@ export const transformImage = async (
         child.info("Generating svg");
         const origFileSizeBytes = tmpFile.bytesWritten;
 
-        const svgData = await _transformToSvg({
+        void _transformToSvg({
           fileName,
           tmpFolder,
           url,
           numberOfShapes,
           shapeType,
           blurLevel,
-        });
-        const dimensions = getDimensions(origPath);
+        })
+          .then((svgData) => {
+            const dimensions = getDimensions(origPath);
 
-        removeTmpFolder(tmpFolder);
-
-        return resolve({
-          svg: svgData.svg,
-          svgBytes: svgData.svgBytes,
-          originalBytes: origFileSizeBytes,
-          dimensions,
-        });
+            resolve({
+              svg: svgData.svg,
+              svgBytes: svgData.svgBytes,
+              originalBytes: origFileSizeBytes,
+              dimensions,
+            });
+          })
+          .then(() => {
+            void removeTmpFolder(tmpFolder);
+          });
       });
     } catch (err) {
       errorMessage = "An error occured while attempting to transform image";

@@ -16,15 +16,6 @@ export const transformRouter = createTRPCRouter({
     )
     .mutation(async ({ input }) => {
       const { url, numberOfShapes } = input;
-      const urlParts = url.split("/");
-      let fileType;
-
-      if (urlParts[0] === "data:image") {
-        fileType = urlParts[1]?.split(";")[0];
-      } else {
-        fileType = urlParts[urlParts.length - 1]?.split(".")[1];
-      }
-
       let transformation;
       let error = null;
 
@@ -43,7 +34,7 @@ export const transformRouter = createTRPCRouter({
         svg: transformation?.svg,
         svgBytes: getPrettySize(Number(transformation?.svgBytes)),
         origingalBytes: getPrettySize(Number(transformation?.originalBytes)),
-        dimensions: transformation?.dimensions || { height: null, width: null },
+        dimensions: transformation?.dimensions ?? { height: null, width: null },
       };
     }),
 });

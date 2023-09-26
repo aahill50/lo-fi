@@ -2,6 +2,7 @@ import Head from "next/head";
 import { Center, ChakraProvider } from "@chakra-ui/react";
 import clsx from "clsx";
 import LoFiForm from "./components/LoFiForm";
+import Image from "next/image";
 
 export default function Home() {
   return (
@@ -13,13 +14,18 @@ export default function Home() {
       </Head>
       <Center>
         <main className="h-full min-h-screen max-w-7xl bg-slate-500 pb-12">
-          <section className={clsx("pb-8", "p-1", "flex", "justify-center")}>
-            <img
+          <section
+            className={clsx("mt-12", "pb-8", "p-1", "flex", "justify-center")}
+          >
+            <Image
               className={clsx("shadow-xl")}
               src="https://i.imgur.com/boTI4vS.gif"
+              alt="lo-fi-logo"
+              width={700}
+              height={200}
             />
           </section>
-          <section className={clsx("pb-8", "p-1", "flex")}>
+          <section className={clsx("mt-12", "mx-12", "pb-8", "p-1", "flex")}>
             <LoFiForm />
           </section>
         </main>
