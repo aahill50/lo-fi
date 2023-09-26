@@ -61,25 +61,3 @@ Once again, [source](https://superuser.com/questions/46139/what-does-source-do/4
 `npm dev`
 
 Now your lo-fi server is running! Head to http://localhost:3000/placeholder to see what it can do!
-
-Now you can generate svgs or gifs by hitting the endpoint (`http://localhost:7041/placeholder` by default) with a `POST` request whose body contains the desired fields. This can be as simple as just using the required fields:
-
-```
-{
-  "webpath" : "URL_TO_IMAGE",
-  "fileType" : "svg"
-}
-```
-
-Additional fields can be passed to modify the result:
-
-### Body properties
-
-| Field              | Type   | Required | Default | Description                                                                                                                                      |
-| ------------------ | ------ | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| fileType           | string | true     | svg     | The type of file to output. Currently supports `gif` and `svg`                                                                                   |
-| webpath            | string | true     |         | The url of the image to be downloaded                                                                                                            |
-| numberOfPrimitives | number | false    | 8       | The number of shapes that will compose the final image                                                                                           |
-| primitiveMode      | number | false    | 0       | Determines the type of shapes that will be used. Defaults to 0 (all shapes). Corresponds to the `m` flag from [primitive](https://goo.gl/U19fy5) |
-| blurLevel          | number | false    | 12      | Determines the level of gaussian blur that will be applied. Only applicable to fileType: `svg`                                                   |
-| bgColor            | hex    | false    | ffffff  | Determines the background color of the svg                                                                                                       |
