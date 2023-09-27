@@ -23,7 +23,8 @@ export const createTmpFolder = async (retryCount = 0): Promise<string> => {
     await mkdirp(folder);
     child.info("Successfully created temp folder");
     return folder;
-  } catch {
+  } catch (e) {
+    child.error(e);
     return await createTmpFolder(retryCount++);
   }
 };
