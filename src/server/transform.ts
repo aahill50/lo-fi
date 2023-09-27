@@ -125,6 +125,12 @@ export const transformImage = async (
 
   return new Promise((resolve, reject) => {
     try {
+      execFileSync("magick", ["-version"]);
+    } catch (e) {
+      child.error("Image Magick not installed. Unable to convert image");
+      return reject("Server Error: Unable to transform image");
+    }
+    try {
       if (res.ok) {
         child.info("Fetched image");
       } else {
