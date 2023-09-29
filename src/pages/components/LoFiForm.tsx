@@ -1,5 +1,3 @@
-'use client'
-
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Container,
@@ -31,7 +29,7 @@ import {
 } from "@chakra-ui/react";
 import { api } from "~/utils/api";
 import { CopyIcon, DownloadIcon, CheckIcon } from "@chakra-ui/icons";
-import { getPrettySize, replaceExtension } from "~/pages/utilities";
+import { replaceExtension, getPrettySize } from "~/utilities";
 
 interface ImageDisplayProps {
   alt: string;

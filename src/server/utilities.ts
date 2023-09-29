@@ -5,7 +5,7 @@ import { writeFile } from "node:fs/promises";
 
 const logger = pino();
 
-export { getPrettySize } from "~/pages/utilities";
+export { getPrettySize } from "~/utilities";
 
 export const downloadImage = async (
   url: string,
