@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Container,
@@ -29,6 +31,7 @@ import {
 } from "@chakra-ui/react";
 import { api } from "~/utils/api";
 import { CopyIcon, DownloadIcon, CheckIcon } from "@chakra-ui/icons";
+import { getPrettySize, replaceExtension } from "~/pages/utilities";
 
 interface ImageDisplayProps {
   alt: string;
@@ -62,6 +65,7 @@ const DEFAULT = {
   webpath: "",
   numShapes: 128,
   blurLevel: 4,
+  fileName: "output.svg",
   origSrc: null,
   origSize: null,
   svgSrc: null,
@@ -82,6 +86,7 @@ const LofiForm = () => {
   const [webpath, setWebpath] = useState(DEFAULT.webpath);
   const [numShapes, setNumShapes] = useState(DEFAULT.numShapes);
   const [blurLevel, setBlurLevel] = useState(DEFAULT.blurLevel);
+  const [fileName, setFileName] = useState<string>(DEFAULT.fileName);
   const [origSrc, setOrigSrc] = useState<string | null>(DEFAULT.origSrc);
   const [origSize, setOrigSize] = useState<string | null>(DEFAULT.origSize);
   const [svgSrc, setSvgSrc] = useState<string | null>(DEFAULT.svgSrc);
@@ -93,10 +98,17 @@ const LofiForm = () => {
 
   const transformImage = api.transform.transformImage.useMutation({
     onSuccess: (data) => {
+      // Construct a blob so we can get the file size of the svg
+      const { size: svgSize } = new Blob([data?.svg ?? ""], {
+        type: "image/svg+xml;charset=utf-8",
+      });
+
+      const fileName = replaceExtension(data?.fileName ?? DEFAULT.fileName);
       setIsTransforming(false);
+      setFileName(fileName);
       setSvgSrc(data?.svg ?? null);
       setOrigSize(data?.origingalBytes ?? null);
-      setSvgSize(data?.svgBytes ?? null);
+      setSvgSize(getPrettySize(svgSize) ?? null);
       setError(data?.error ?? null);
       setSvgBtn(DEFAULT.svgBtn);
       setDownloadBtn(DEFAULT.downloadBtn);
@@ -120,6 +132,8 @@ const LofiForm = () => {
   const onChangeBlurLevel = useCallback(
     (value: number) => {
       setBlurLevel(value);
+      setDownloadBtn(DEFAULT.downloadBtn);
+      setSvgBtn(DEFAULT.svgBtn);
     },
     [setBlurLevel],
   );
@@ -143,14 +157,16 @@ const LofiForm = () => {
       });
       const svgUrl = URL.createObjectURL(svgBlob);
       const downloadLink = document.createElement("a");
+
       downloadLink.href = svgUrl;
-      downloadLink.download = "output.svg";
+      downloadLink.download = fileName;
       document.body.appendChild(downloadLink);
       downloadLink.click();
       document.body.removeChild(downloadLink);
+
       setDownloadBtn({ text: "Downloaded", downloaded: true });
     }
-  }, [svgSrc]);
+  }, [svgSrc, fileName]);
 
   useEffect(() => {
     const updatedSvgSrc =
@@ -263,7 +279,7 @@ const LofiForm = () => {
                       .writeText(svgSrc ?? "")
                       .then(() => {
                         setSvgBtn({ text: "Copied", copied: true });
-                      })
+                      });
                   }}
                 >
                   {svgBtn.text}

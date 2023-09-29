@@ -1,10 +1,10 @@
 import { z } from "zod";
-
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { transformImage } from "~/server/transform";
-import { partial } from "filesize";
 import { OPTION_DEFAULT_BLUR } from "~/server/constants";
-const getPrettySize = partial({ base: 2, standard: "jedec" });
+import { getPrettySize } from "~/server/utilities";
+
+type Transformation = Awaited<Promise<ReturnType<typeof transformImage>>>;
 
 export const transformRouter = createTRPCRouter({
   transformImage: publicProcedure
@@ -16,7 +16,7 @@ export const transformRouter = createTRPCRouter({
     )
     .mutation(async ({ input }) => {
       const { url, numberOfShapes } = input;
-      let transformation;
+      let transformation: Transformation | undefined;
       let error = null;
 
       try {
@@ -30,11 +30,19 @@ export const transformRouter = createTRPCRouter({
         return { error };
       }
 
+      if (!transformation) {
+        error = "Server error: Unable to transform image";
+        return { error };
+      }
+
       return {
-        svg: transformation?.svg,
-        svgBytes: getPrettySize(Number(transformation?.svgBytes)),
-        origingalBytes: getPrettySize(Number(transformation?.originalBytes)),
-        dimensions: transformation?.dimensions ?? { height: null, width: null },
+        fileName: transformation.fileName,
+        svg: transformation.final_svg,
+        origingalBytes: getPrettySize(Number(transformation.fileSize)),
+        dimensions: transformation.img_dimensions ?? {
+          height: null,
+          width: null,
+        },
       };
     }),
 });
